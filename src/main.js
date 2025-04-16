@@ -1,7 +1,6 @@
 import iziToast from "izitoast";
-import { findPhotos } from "./js/pixabay-api";
-import SimpleLightbox from "simplelightbox";
-import "simplelightbox/dist/simple-lightbox.min.css";
+import getImagesByQuery from "./js/pixabay-api";
+
 import {
   createGalleryCardTemplate,
   clearGallery,
@@ -18,13 +17,7 @@ const loadMoreBtnEl = document.querySelector('.load-more-btn');
 let currentPage = 1;
 let searchedValue = '';
 let quantityElements = 0;
-
-const lightbox = new SimpleLightbox('.gallery a', {
-  captionDelay: 250,
-  captionPosition: 'bottom',
-  captionsData: 'alt',
-  overlayOpacity: 1,
-});
+let totalHits = 0;
 
 const searchFormSubmit = async event => {
   event.preventDefault();
@@ -39,15 +32,15 @@ const searchFormSubmit = async event => {
     return;
   }
 
-  clearGallery();
   quantityElements = 0;
+  currentPage = 1;
+  clearGallery();
   hideLoadMoreBtn();
   showLoader();
-  currentPage = 1;
 
   try {
-    const response = await findPhotos(searchedValue, currentPage);
-    const data = response.data;
+    const data = await getImagesByQuery(searchedValue, currentPage);
+    
 
     if (!data || !data.hits || data.hits.length === 0) {
       iziToast.error({
@@ -58,13 +51,18 @@ const searchFormSubmit = async event => {
       return;
     }
 
-    const markup = createGalleryCardTemplate(data.hits);
-    galleryEl.innerHTML = markup;
-    lightbox.refresh();
+    totalHits = data.totalHits;
+    createGalleryCardTemplate(data.hits);
 
-    showLoadMoreBtn();
-    searchFormEl.reset();
     quantityElements += data.hits.length;
+
+    if (quantityElements < totalHits) {
+      showLoadMoreBtn();
+    } else {
+      hideLoadMoreBtn();
+    }
+
+    searchFormEl.reset();
 
   } catch (err) {
     console.log(err);
@@ -81,10 +79,10 @@ const onLoadMorePhoto = async () => {
   try {
     showLoader();
     currentPage++;
-    const response = await findPhotos(searchedValue, currentPage);
-    const data = response.data;
 
-    if (!data.hits || data.hits.length === 0) {
+    const data = await getImagesByQuery(searchedValue, currentPage);
+
+    if (!data || !data.hits || data.hits.length === 0) {
       iziToast.show({
         message: "We're sorry, but you've reached the end of search results.",
         position: 'topRight',
@@ -93,9 +91,7 @@ const onLoadMorePhoto = async () => {
       return;
     }
 
-    const markup = createGalleryCardTemplate(data.hits);
-    galleryEl.insertAdjacentHTML('beforeend', markup);
-    lightbox.refresh();
+    createGalleryCardTemplate(data.hits);
 
     const firstCard = galleryEl.firstElementChild;
     const { height: cardHeight } = firstCard.getBoundingClientRect();
@@ -106,7 +102,7 @@ const onLoadMorePhoto = async () => {
 
     quantityElements += data.hits.length;
 
-    if (Math.ceil(data.totalHits / 15) === currentPage) {
+    if (quantityElements >= totalHits) {
       iziToast.show({
         message: "We're sorry, but you've reached the end of search results.",
         position: 'topRight',

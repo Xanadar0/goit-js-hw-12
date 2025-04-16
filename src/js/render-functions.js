@@ -1,9 +1,12 @@
+import SimpleLightbox from 'simplelightbox';
+import 'simplelightbox/dist/simple-lightbox.min.css';
+
 const gallery = document.querySelector('.gallery');
 const loader = document.querySelector('.loader');
 const loadMoreBtnEl = document.querySelector('.load-more-btn');
 
 export const createGalleryCardTemplate = photoInfo => {
-  return photoInfo
+  const markup = photoInfo
     .map(
       ({
         webformatURL,
@@ -43,24 +46,34 @@ export const createGalleryCardTemplate = photoInfo => {
     </li>`
     )
     .join('');
+  
+  gallery.insertAdjacentHTML('beforeend', markup);
+  lightbox.refresh();
+  
 };
+const lightbox = new SimpleLightbox('.gallery a', {
+  captionDelay: 250,
+  captionPosition: 'bottom',
+  captionsData: 'alt',
+  overlayOpacity: 1,
+});
 
-export const clearGallery = () => {
+export function  clearGallery() {
   gallery.innerHTML = '';
 };
 
-export const showLoader = () => {
+export function  showLoader() {
   loader.classList.remove('is-hidden');
 };
 
-export const hideLoader = () => {
+export function  hideLoader() {
   loader.classList.add('is-hidden');
 };
 
-export const showLoadMoreBtn = () => {
+export function  showLoadMoreBtn() {
   loadMoreBtnEl.classList.remove('is-hidden');
 };
 
-export const hideLoadMoreBtn = () => {
+export function  hideLoadMoreBtn() {
   loadMoreBtnEl.classList.add('is-hidden');
 };
